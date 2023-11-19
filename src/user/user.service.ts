@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { SignupDto } from '../auth/dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2'
+import { UpdatePasswordDto } from './dto';
 
 @Injectable()
 export class UserService {
@@ -48,6 +49,27 @@ export class UserService {
         return user
     }
 
+    async passwordUpdate(userId: number, dto: UpdatePasswordDto): Promise<User> {
+        if (dto.password !== dto.confirmedPassword)
+            throw new ForbiddenException('Password do not match')
+
+        delete dto.confirmedPassword
+
+        const passwordHash = await argon.hash(dto.password)
+
+        const user = await this.prisma.user.update({
+            where: {
+                id: userId
+            },
+            data: {
+                password: passwordHash,
+            }
+        })
+
+        delete user.password
+
+        return user
+    }
    
     
 }
