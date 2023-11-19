@@ -13,9 +13,6 @@ datasource db {
 model User {
   id Int @id @default(autoincrement())
 
-  profile Profile?
-  accounts UserAccount[]
-
   username String @unique
   email String @unique
   phone String @unique
@@ -49,6 +46,11 @@ model User {
   deletedRequest Boolean @default(false)
   deletedStatus String?
 
+  profile Profile?
+  accounts UserAccount[]
+  newUsers UserReferral[] @relation("ReferralNewUser")
+  referreeUsers UserReferral[] @relation("ReferralRefereeUser")
+
   @@map("users")
 }
 
@@ -56,7 +58,7 @@ model Profile {
   id Int @id @default(autoincrement())
 
   userId Int @unique
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   avatar String?
 
@@ -148,4 +150,21 @@ model UserAccount {
   updatedAt DateTime @updatedAt
   
   @@map("user_accounts")
+}
+
+model UserReferral {
+  id Int @id @default(autoincrement())
+
+  newUserId Int
+  newUser User @relation(name: "ReferralNewUser", fields: [newUserId], references: [id], onDelete: Cascade)
+
+  refereeUserId Int
+  referreeUser User @relation(name: "ReferralRefereeUser", fields: [refereeUserId], references: [id], onDelete: Cascade)
+
+  expiredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("user_referrals")
 }

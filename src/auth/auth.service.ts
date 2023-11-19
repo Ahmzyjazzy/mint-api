@@ -1,62 +1,86 @@
 import { ForbiddenException, Injectable } from '@nestjs/common'
 import { AuthDto, SignupDto } from './dto'
-import { PrismaService } from 'src/prisma/prisma.service'
-import * as argon from 'argon2'
+import { PrismaService } from '../prisma/prisma.service'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { JwtService } from '@nestjs/jwt'
+import { ConfigService } from '@nestjs/config'
+import * as argon from 'argon2'
+import { UserService } from '../user/user.service'
+import { ReferralService } from '../referral/referral.service'
 
 @Injectable()
 export class AuthService {
-    constructor(private prisma: PrismaService){}
+    constructor(
+        private prisma: PrismaService,
+        private userService: UserService,
+        private referralService: ReferralService,
+        private jwtService: JwtService,
+        private config: ConfigService
+    ) { }
 
     async signup(dto: SignupDto) {
-        //generate password hash
-        const hash = await argon.hash(dto.password)
         
-        // save new user in the db
         try {
+            // check if user was referred
+            let refereeUser
+            if (dto.referrer) {
+                refereeUser = await this.referralService.getRefereeUserByReferralId(dto.referrer) ??
+                    await this.referralService.getRefereeUserByPhone(dto.referrer, dto.countryDialCode)
 
-            const user = await this.prisma.user.create({
-                data: {
-                    username: '',
-                    email: dto.email,
-                    phone: dto.phone,
-                    password: hash
-                }
-            })
+                if (!refereeUser)
+                    throw new ForbiddenException('Referral does not exist or Invalid referrer value supplied')
+            }
 
-            delete user.password
+            // save new user in the db
+            const newUser = await this.userService.createUser(dto)
 
-            // return saved user
-            return user
+            // save new referrer if exist
+            if (refereeUser) {
+                const referrer = await this.referralService.createReferralMapping(newUser, refereeUser)
+                // todo: send email to notify referee
+            }
+
+            // todo: send email to notify new user for account creation
+            return this.signToken(newUser.id, newUser.email)
     
         } catch (error) {
+            console.log('error =>', error.message)
             if (error instanceof PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
                     throw new ForbiddenException('Credential taken')
                 }
             }
+            throw new ForbiddenException(error.message)
         }
     }
 
     async login(dto: AuthDto) {
-        // find user by email
-        const user = await this.prisma.user.findUnique({
-            where: {
-                email: dto.username
-            }
-        })
+        // find matching user
+        const user = await this.userService.findOne(dto.username)
 
-        // if user does not exist throw exception
         if (!user)
             throw new ForbiddenException('Credentials incorrect')
 
         const pwMatches = await argon.verify(user.password, dto.password)
-        // if password is incorrect throw an exception
         if (!pwMatches)
             throw new ForbiddenException('Credentials incorrect')
 
-        delete user.password
-        return user
+        return this.signToken(user.id, user.email)
     }
-        
+    
+    async signToken(userId: number, email: string): Promise<{ access_token: string }> {
+        const payload = {
+            sub: userId,
+            email
+        }
+        const secret = this.config.get('JSWT_SECRET')
+        const token = await this.jwtService.signAsync(payload, {
+            expiresIn: '15m',
+            secret
+        })
+
+        return {
+            access_token: token
+        }
+    }
 }

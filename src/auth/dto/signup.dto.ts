@@ -1,5 +1,5 @@
 import {
-    IsEmail, IsNotEmpty, IsNumberString, IsString
+    IsEmail, IsNotEmpty, IsNumberString, IsOptional, IsString
 } from "class-validator"
 
 export class SignupDto {
@@ -35,4 +35,7 @@ export class SignupDto {
     @IsNotEmpty()
     countryDialCode: string
 
+    @IsOptional()
+    @IsString()
+    referrer: string
 }
