@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  profile Profile?
+  accounts UserAccount[]
+
+  username String @unique
+  email String @unique
+  phone String @unique
+  country String? @default("Nigeria")
+  countryCode String? @default("NG")
+  countryDialCode String? @default("234")
+
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  bvnVerifiedAt DateTime?
+  accountVerifiedAt DateTime?
+
+  password String
+  forcePasswordChange Boolean @default(false)
+  useTwoFactor Boolean @default(false)
+
+  txnPincode String?
+  accountTier String?
+  accountPnd Boolean @default(false)
+  accountPndReason String?
+
+  referralId String? @unique
+  referralLink String? @unique
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt DateTime?
+  deletedRequest Boolean @default(false)
+  deletedStatus String?
+
+  @@map("users")
+}
+
+model Profile {
+  id Int @id @default(autoincrement())
+
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+
+  avatar String?
+
+  title String?
+  firstName String?
+  lastName String?
+  middleName String?
+  gender String?
+
+  dateOfBirth String?
+
+  nationality String?
+  stateOfOrigin String?
+  lgaOfOrigin String?
+
+  maritalStatus String?
+  maidenName String?
+
+  contactAddress String?
+  contactLga String?
+  contactState String?
+  contactLandmark String?
+
+  nokName String?
+  nokRelationship String?
+  nokDateOfBirth String?
+  nokEmail String?
+  nokPhone String?
+  nokAddress String?
+
+  employmentStatus Boolean? // employee, retired, student, self employed, unemployed, unable to work
+  employmentType String? // individual, private, federal govt, state govt, local govt, ngo-employed, religious worker 
+  employmentOccupation String?
+  employmentEmployer String?
+  employmentOfficeAddress String?
+  employmentDateEmployed String?
+
+  bvn String? // encrypted
+  bvnFirstName String?
+  bvnLastName String?
+  bvnMiddleName String?
+  bvnEmail String?
+  bvnPhone1 String?
+  bvnPhone2 String?
+  bvnAvatar String?
+  bvnJson String? //encrypted
+
+  nin String? // encrypted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Account {
+  id Int @id @default(autoincrement())
+
+  name String @unique // wallet-account, bank-account[credit/savings], target-savings-account
+
+  active Boolean @default(true)
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userAccounts UserAccount[]
+
+  @@map("accounts")
+}
+
+model UserAccount {
+  id Int @id @default(autoincrement())
+
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+
+  accountNumber Int?
+  accountId Int
+  account Account @relation(fields: [accountId], references: [id])
+  
+  subAccountId Int? //store sub account mapping e.g target savings acct, loan account
+
+  postNoDebit Boolean @default(false)
+  previousBalance String? // encrypted
+  accountBalance String?  // encrypted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("user_accounts")
+}

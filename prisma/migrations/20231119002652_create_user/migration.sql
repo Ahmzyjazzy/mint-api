@@ -1,0 +1,32 @@
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "userName" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "country" TEXT,
+    "countryDialCode" TEXT,
+    "emailVerifiedAt" TIMESTAMP(3),
+    "phoneVerifiedAt" TIMESTAMP(3),
+    "bvnVerifiedAt" TIMESTAMP(3),
+    "accountVerifiedAt" TIMESTAMP(3),
+    "password" TEXT NOT NULL,
+    "forcePasswordChange" BOOLEAN NOT NULL DEFAULT false,
+    "useTwoFactor" BOOLEAN NOT NULL DEFAULT false,
+    "txnPincode" TEXT NOT NULL,
+    "accountTier" TEXT,
+    "accountPnd" BOOLEAN NOT NULL DEFAULT false,
+    "accountPndReason" TEXT,
+    "referral" TEXT,
+    "referralLink" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedRequest" BOOLEAN NOT NULL DEFAULT false,
+    "deletedStatus" TEXT,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
