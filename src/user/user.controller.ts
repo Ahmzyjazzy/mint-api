@@ -2,7 +2,7 @@ import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { GetUser } from '../auth/decorator';
 import { JwtGuard } from '../auth/guard';
-import { UpdatePasswordDto } from './dto';
+import { ChangePasswordDto, UpdatePasswordDto } from './dto';
 import { UserService } from './user.service';
 
 @UseGuards(JwtGuard)
@@ -22,5 +22,13 @@ export class UserController {
         @Body() updatePasswordDto: UpdatePasswordDto
     ) {
         return this.userService.passwordUpdate(userId, updatePasswordDto)
+    }
+
+    @Patch('password/change')
+    changePassword(
+        @GetUser('id') userId: number,
+        @Body() changePasswordDto: ChangePasswordDto
+    ) {
+        return this.userService.changePassword(userId, changePasswordDto)
     }
 }

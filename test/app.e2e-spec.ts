@@ -6,7 +6,7 @@ import * as pactum from 'pactum'
 import { AppModule } from '../src/app.module'
 import { PrismaService } from '../src/prisma/prisma.service';
 import { AuthDto, SignupDto } from 'src/auth/dto';
-import { UpdatePasswordDto } from 'src/user/dto';
+import { ChangePasswordDto, UpdatePasswordDto } from 'src/user/dto';
 
 describe('App e2e', () => {
   let app: INestApplication
@@ -161,6 +161,13 @@ describe('App e2e', () => {
           })
           .expectStatus(200)
       })
+
+      it('should throw if request is not authorised', () => {
+        return pactum
+          .spec()
+          .get('/users/me')
+          .expectStatus(401)
+      })
     })
 
     describe('Update Password', () => {
@@ -196,6 +203,108 @@ describe('App e2e', () => {
         return pactum
           .spec()
           .patch('/users/password')
+          .withBody(dto)
+          .expectStatus(401)
+      })
+    })
+
+    describe('Change Password', () => {
+      const dto: ChangePasswordDto = {
+        oldpassword: 'password',
+        password: 'password@12345',
+        confirmedPassword: 'password@12345',
+      }
+
+      it('should change password', () => {
+        return pactum
+          .spec()
+          .patch('/users/password')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(200)
+      })
+
+      it('should throw if old password is wrong', () => {
+        dto.oldpassword = 'oldpassword'
+        return pactum
+          .spec()
+          .patch('/users/password/change')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(403)
+      })
+
+      it('should throw if new password do not match', () => {
+        dto.confirmedPassword = 'password'
+        return pactum
+          .spec()
+          .patch('/users/password/change')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(403)
+      })
+
+      it('should throw if request is not authorised', () => {
+        return pactum
+          .spec()
+          .patch('/users/password/change')
+          .withBody(dto)
+          .expectStatus(401)
+      })
+    })
+
+    describe('Update BasicData', () => {
+      const dto: ChangePasswordDto = {
+        oldpassword: 'password',
+        password: 'password@12345',
+        confirmedPassword: 'password@12345',
+      }
+
+      it('should change password', () => {
+        return pactum
+          .spec()
+          .patch('/users/password')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(200)
+      })
+
+      it('should throw if old password is wrong', () => {
+        dto.oldpassword = 'oldpassword'
+        return pactum
+          .spec()
+          .patch('/users/password/change')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(403)
+      })
+
+      it('should throw if new password do not match', () => {
+        dto.confirmedPassword = 'password'
+        return pactum
+          .spec()
+          .patch('/users/password/change')
+          .withBody(dto)
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}'
+          })
+          .expectStatus(403)
+      })
+
+      it('should throw if request is not authorised', () => {
+        return pactum
+          .spec()
+          .patch('/users/password/change')
           .withBody(dto)
           .expectStatus(401)
       })

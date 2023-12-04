@@ -3,7 +3,7 @@ import { User } from '@prisma/client';
 import { SignupDto } from '../auth/dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2'
-import { UpdatePasswordDto } from './dto';
+import { ChangePasswordDto, UpdatePasswordDto } from './dto';
 
 @Injectable()
 export class UserService {
@@ -16,6 +16,17 @@ export class UserService {
         const user = await this.prisma.user.findUnique({
             where: {
                 email: username
+            }
+        })
+
+        return user
+    }
+
+    async findById(userId: number): Promise<User> {
+        // find user by email
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id: userId
             }
         })
 
@@ -49,27 +60,48 @@ export class UserService {
         return user
     }
 
-    async passwordUpdate(userId: number, dto: UpdatePasswordDto): Promise<User> {
-        if (dto.password !== dto.confirmedPassword)
-            throw new ForbiddenException('Password do not match')
-
-        delete dto.confirmedPassword
-
-        const passwordHash = await argon.hash(dto.password)
-
+    async updateUserPassword(userId: number, newPasswordHash: string): Promise<User> {
         const user = await this.prisma.user.update({
             where: {
                 id: userId
             },
             data: {
-                password: passwordHash,
+                password: newPasswordHash,
             }
         })
 
-        delete user.password
-
         return user
     }
+
+    async passwordUpdate(userId: number, dto: UpdatePasswordDto): Promise<User> {
+        if (dto.password !== dto.confirmedPassword)
+            throw new ForbiddenException('Password do not match')
+
+        const passwordHash = await argon.hash(dto.password)
+        const user = await this.updateUserPassword(userId, passwordHash)
+
+        delete user.password
+        return user
+    }
+
+    async changePassword(userId: number, dto: ChangePasswordDto): Promise<User> {
+        if (dto.password !== dto.confirmedPassword)
+            throw new ForbiddenException('Password do not match')
+
+        const user = await this.findById(userId)
+
+        if (!user)
+            throw new ForbiddenException('Invalid parameter supplied')
+
+        const pwMatches = await argon.verify(user.password, dto.oldpassword)
+        if (!pwMatches)
+            throw new ForbiddenException('Invalid password supplied')
+
+        const newPasswordHash = await argon.hash(dto.password)
+        const updateUser = await this.updateUserPassword(userId, newPasswordHash)
+
+        delete updateUser.password
+        return updateUser
+    }
    
-    
 }

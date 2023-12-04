@@ -11,7 +11,6 @@ import { ReferralService } from '../referral/referral.service'
 @Injectable()
 export class AuthService {
     constructor(
-        private prisma: PrismaService,
         private userService: UserService,
         private referralService: ReferralService,
         private jwtService: JwtService,
@@ -44,7 +43,6 @@ export class AuthService {
             return this.signToken(newUser.id, newUser.email)
     
         } catch (error) {
-            console.log('error =>', error.message)
             if (error instanceof PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
                     throw new ForbiddenException('Credential taken')
